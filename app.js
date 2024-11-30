@@ -7,7 +7,11 @@ require("dotenv").config();
 console.log("MongoDB URI:", process.env.MONGO_URI);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;// When port is not specified
+app.listen(port, () => {
+    console.log(`App started on port: ${port}`);
+});
+
 
 // Middleware to use database connection in routes
 app.use(cors());
