@@ -4,41 +4,42 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
 require("dotenv").config();
+
+// Debug logs
 console.log("MongoDB URI:", process.env.MONGO_URI);
+const port = process.env.PORT || 8080; // Default port
+console.log("PORT is set to:", port); // Debug log
+console.log("Environment Variables:", process.env); // Debug log
 
 const app = express();
-const port = process.env.PORT || 3000;// When port is not specified
-app.listen(port, () => {
-    console.log(`App started on port: ${port}`);
-});
 
-
-// Middleware to use database connection in routes
+// Middleware
 app.use(cors());
 app.use(express.json());
+
+// Root Route
+app.get("/", (req, res) => {
+  res.send("Fullstackcw Page");
+});
 
 // Import routes
 const lessonsRoutes = require("./routes/lessons");
 const ordersRoutes = require("./routes/orders");
 
-// Use routes
-app.use("/api/lessons", lessonsRoutes);
-app.use("/api/orders", ordersRoutes);
-
+// MongoDB Connection
 MongoClient.connect(process.env.MONGO_URI)
   .then((client) => {
     console.log("Connected to MongoDB");
-    db = client.db(); // Save database connection
+    const db = client.db(); // Save database connection
     app.locals.db = db;
 
-    const lessonsRoute = require("./routes/lessons");
-    app.use("/api/lessons", lessonsRoute);
+    // Use routes 
+    app.use("/api/lessons", lessonsRoutes);
+    app.use("/api/orders", ordersRoutes);
 
-    const ordersRoute = require("./routes/orders");
-    app.use("/api/orders", ordersRoute);
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    // Start the server
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
     });
   })
   .catch((err) => {

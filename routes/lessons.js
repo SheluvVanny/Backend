@@ -5,6 +5,12 @@ const { ObjectId } = require("mongodb");
 
 // Get all lessons
 router.get("/", async (req, res) => {
+  const db = req.app.locals.db; // Access the shared database connection
+  if (!db) {
+    console.error("Database connection is not available.");
+    return res.status(500).send("Database connection error");
+  }
+
   try {
     const lessons = await db.collection("lessons").find({}).toArray();
     console.log("Fetched lessons from DB:", lessons); // Debugging log
@@ -17,34 +23,51 @@ router.get("/", async (req, res) => {
 
 // Add a new lesson
 router.post("/", async (req, res) => {
-  const db = req.app.locals.db; // Access the shared database connection
-  const newLesson = req.body; // Extract the new lesson data from the request body
+    console.log("POST Request Received"); // Log the request type
+    console.log("Request Body:", req.body); // Log the incoming request body
 
-  // Check request body
-  if (!newLesson.subject || !newLesson.location || !newLesson.price || !newLesson.availability || !newLesson.image) {
-    return res.status(400).json({ error: "All fields (subject, location, price, availability, image) are required." });
-  }
+    const db = req.app.locals.db; // Access the shared database connection
+    if (!db) {
+        console.error("Database connection is not available."); // Log the error
+        return res.status(500).json({ error: "Database connection error" });
+    }
 
-  console.log("Adding new lesson:", newLesson); // Debugging log
+    const newLesson = req.body;
 
-  try {
-    const result = await db.collection("lessons").insertOne(newLesson); // Insert the new lesson
+    // Validate the incoming data
+    if (!newLesson.subject || !newLesson.location || !newLesson.price || !newLesson.availability || !newLesson.image) {
+        console.error("Validation Error: Missing Fields"); // Log the error
+        return res
+            .status(400)
+            .json({ error: "All fields (subject, location, price, availability, image) are required." });
+    }
 
-    console.log("Insert result:", result); // Debugging log
-    // Fetch the new lesson
-    const insertedLesson = await db.collection("lessons").findOne({ _id: result.insertedId });
+    try {
+        // Insert the lesson
+        const result = await db.collection("lessons").insertOne(newLesson);
+        console.log("Insert Result:", result); // Log the result of insertion
 
-    res.status(201).json({ message: "Lesson added successfully", lesson: insertedLesson });
-  } catch (err) {
-    console.error("Error adding lesson:", err); // Log errors for debugging
-    res.status(500).json({ error: "Failed to add lesson" });
-  }
+        // Directly use the result for confirmation
+        const insertedLesson = { _id: result.insertedId, ...newLesson };
+
+        console.log("Inserted Lesson:", insertedLesson); // Log the newly created lesson
+        res.status(201).json({ message: "Lesson added successfully", lesson: insertedLesson });
+    } catch (err) {
+        // Log errors during insertion
+        console.error("Error Adding Lesson:", err);
+        res.status(500).json({ error: "Failed to add lesson" });
+    }
 });
 
 
 // Update a lesson
 router.put("/:id", async (req, res) => {
   const db = req.app.locals.db; // Use the shared database connection
+  if (!db) {
+    console.error("Database connection is not available.");
+    return res.status(500).send("Database connection error");
+  }
+
   const lessonId = req.params.id; // Extract the lesson ID from the URL
   const updateData = req.body; // Extract the update data from the request body
 
